@@ -1,0 +1,56 @@
+extends layout
+
+block content
+    nav.navbar.navbar-inverse.navbar-fixed-top
+      .container
+        .navbar-header
+          a.navbar-brand(href='#') Drawing App
+        #navbar.navbar-collapse.collapse.navbar-right
+          ul.nav.navbar-nav
+            li.active
+              a(id="username" href='#') #{user.username}
+            li
+              a(href='/signout') Sign Out
+    .container
+      #main.row
+        #images.col-md-4
+
+          - if (user.images && user.images.length)
+          h4 Uploaded images
+          - for(var i = 0; i < user.images.length; ++i) {
+          img(src=user.images[i], width="100px", height="100px", id="img")
+          - }
+
+          .preview#refresh
+
+          h4 Drop file to upload
+          form(enctype="multipart/form-data")
+            span.btn.btn-default.btn-file
+              !=cloudinary.uploader.image_upload_tag('image')
+        .col-md-8
+          .workspace.text-center(ng-app='pw.canvas-painter', ng-controller='CanvasController as ctrl')
+            div(pw-canvas='', version='ctrl.version', options="{undo: true, width: 800, height: 600, color: selectedColor, lineWidth: selectedLineWidth, customCanvasId: 'myCanvas'}")
+            div(pw-color-selector="['#33cc33', '#ffcc00', 'red', '#3366ff', '#ff3300', '#999966', '#00ffcc', '#000', '#fff']", color='selectedColor')
+            .range.well
+              input.lineWidthSelector(type='range', min='1', max='50', ng-model='selectedLineWidth')
+              {{selectedLineWidth}}
+            .buttons
+              button.btn.btn-warning(ng-click='ctrl.undo()', ng-disabled='ctrl.version < 1') Cancel (Version {{ctrl.version}})
+              button.btn.btn-info(ng-click='ctrl.clear()') Clear
+              a.btn.btn-primary#downloadImgLink(onclick="$('#downloadImgLink').attr('href', document.getElementById('myCanvas').toDataURL());", download='MyImage.png', href='#', target='_blank') Download As Image
+              button.btn.btn-success#save(style="display: none;" ng-click='ctrl.save()') Save to database
+
+        .clearfix
+
+block scripts
+  script(type='text/javascript').
+      $.cloudinary.config({ api_key: '!{api_key}', cloud_name: '!{cloud_name}' });
+      $('.cloudinary-fileupload').bind('fileuploadstart', function(e){
+      $('.preview').html('Upload started...');
+      });
+      $('.cloudinary-fileupload').bind('cloudinarydone', function(e, data){
+      $('.preview').html(
+      $.cloudinary.image(data.result.public_id, { format: data.result.format, version: data.result.version, crop: 'scale', width: 100, height: 100 })
+      );
+      return true;
+      });
